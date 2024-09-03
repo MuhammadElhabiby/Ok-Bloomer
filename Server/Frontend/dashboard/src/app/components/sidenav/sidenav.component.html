@@ -1,0 +1,21 @@
+<div class="main">
+    <mat-drawer-container >
+        <mat-drawer mode="side" opened class="sidenav">
+            <mat-selection-list>
+                <mat-list>
+                    <div >
+                        <a mat-button class="sideButton" routerLink="/charts" routerLinkActive="active">Charts</a>
+                        <a mat-button class="sideButton" routerLink="/preseteditor" routerLinkActive="active">Plant Presets</a>
+                        <a mat-button class="sideButton" routerLink="/timelaps" routerLinkActive="active">Timelapse</a>
+                        <a mat-button class="sideButton" routerLink="/glossarplants" routerLinkActive="active">Plant Glossary</a>
+                        <a mat-button class="sideButton" routerLink="/pestglossary" routerLinkActive="active">Pest Glossary</a>
+                        <app-info></app-info>
+                    </div>
+                </mat-list>
+            </mat-selection-list>
+        </mat-drawer>
+        <mat-drawer-content>
+            <router-outlet></router-outlet>
+        </mat-drawer-content>
+    </mat-drawer-container>
+</div>

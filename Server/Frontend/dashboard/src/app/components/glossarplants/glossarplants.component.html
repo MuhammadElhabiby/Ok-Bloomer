@@ -1,0 +1,35 @@
+<h2><span>Select the plant you want to learn about: </span></h2>
+<div class = buttons>
+  <button mat-button (click)="activateChili()">
+    <img class="plant" [src]="image1" alt="">
+  </button>
+  <button mat-button (click)="activatePotato()">
+    <img class="plant" [src]="image2" alt="">
+  </button>
+  <button mat-button (click)="activateBasil()">
+    <img class="plant" [src]="image3" alt="">
+  </button>
+  <button mat-button (click)="activateSucchini()">
+    <img class="plant" [src]="image4" alt="">
+  </button>
+  <button mat-button (click)="activatePaprica()">
+    <img class="plant" [src]="image5" alt="">
+  </button>
+</div>
+
+<div *ngIf="selectedchili">
+  <app-chili></app-chili>
+</div>
+<div *ngIf="selectedPotato">
+  <app-potato></app-potato>
+</div>
+<div *ngIf="selectedBasil">
+  <app-basil></app-basil>
+</div>
+<div *ngIf="selectedSucchini">
+  <app-succhini></app-succhini>
+</div>
+<div *ngIf="selectedPaprica">
+  <app-paprica></app-paprica>
+</div>
+

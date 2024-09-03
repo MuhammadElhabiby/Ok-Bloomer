@@ -1,0 +1,49 @@
+<mat-card>
+    <mat-card-content>
+      <h2 class="choose">Select the plants you integrated to your system</h2>
+  
+      <section class="section">
+        <mat-checkbox [(ngModel)]="checkchili">Chili</mat-checkbox>
+        <mat-checkbox [(ngModel)]="checkbasil">Basil</mat-checkbox>
+        <mat-checkbox [(ngModel)]="checkpotato">Potato</mat-checkbox>
+        <mat-checkbox [(ngModel)]="checkpaprica">Paprica</mat-checkbox>
+        <mat-checkbox [(ngModel)]="checkzucchini">Zucchini</mat-checkbox>
+      </section>
+      <button mat-raised-button color="accent" (click)="onClick()">confirm</button>
+    </mat-card-content>
+</mat-card>
+
+
+
+<form (submit)="updatePreset()" #commentForm="ngForm">
+
+    <div>
+        <mat-form-field>
+            <div>
+                <mat-label>Name your hydroponic system: </mat-label>
+                <textarea [(ngModel)]="name" matInput placeholder="Preset name:" rows="1" name="name" ngModel [ngModelOptions]="{standalone: true}"></textarea>
+            </div>
+            <div>
+                <mat-label>Light hours: </mat-label>
+                <input [(ngModel)]="lightNeededPerDay" type="number" placeholder="Hours" [ngModelOptions]="{standalone: true}">
+            </div>
+            <div>
+                <mat-label>Water temperature: </mat-label>
+                <ngx-slider [(value)]="minWaterTemp" [(highValue)]="maxWaterTemp" [options]="optionsWatertemp"></ngx-slider>
+            </div>
+            <div>
+                <mat-label>Air temperature: </mat-label>
+                <ngx-slider [(value)]="minAirTemp" [(highValue)]="maxAirTemp" [options]="optionsAirtemp"></ngx-slider>
+            </div>
+            <div>
+                <mat-label>Humidity: </mat-label>
+                <ngx-slider [(value)]="minHumidity" [(highValue)]="maxHumidity" [options]="optionsHumidity"></ngx-slider>
+            </div>
+            <div>
+                <mat-label>Total Dissolved Solids (TDS): </mat-label>
+                <ngx-slider [(value)]="minTdsWert" [(highValue)]="maxTdsWert" [options]="optionsTds"></ngx-slider>
+            </div>
+        </mat-form-field><br>
+        <button mat-raised-button color="accent">Update Presets</button>
+    </div>
+  </form>

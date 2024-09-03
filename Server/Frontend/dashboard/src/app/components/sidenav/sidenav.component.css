@@ -1,0 +1,35 @@
+.main {
+    width: 100%;
+    margin: 0px;
+    height: 93.4%;
+    position: fixed;
+    padding-left: 0px;
+}
+
+.mat-drawer-content {
+    padding-left: 30px;
+    padding-right: 30px;
+}
+  
+.sidenav{
+    background-color: #E5D3AC;
+    text-align: center;
+    width: 12%;
+    min-width: 200px;
+    height: 100%;
+}
+
+.sideButton{
+    width: 90%;
+}
+
+.active{
+    background-color: #AF9A71;
+}
+
+.mat-drawer-container{
+    height: 100%;
+}
+.status{
+    margin-top: 100px;
+}

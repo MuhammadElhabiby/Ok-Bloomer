@@ -1,0 +1,21 @@
+.content {
+    padding: 16px;
+}
+
+.content > mat-card {
+    width: 400px;
+}
+
+.content > ng-deep.mat-card-header-text {
+    width: 100%
+}
+
+.mat-card-image{
+    width: 300px;
+    height: 300px;
+}
+
+.plant {
+    width: 300px;
+    height: 300px;
+}

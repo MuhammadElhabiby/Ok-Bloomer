@@ -1,0 +1,60 @@
+services:
+  dashboard:
+    container_name: ok-bloomer_dashboard
+    restart: unless-stopped
+    build: ./Server
+    ports:
+      - 7000:3000
+    environment:
+        - SERVER_PORT=3000
+        - MQTT_HOST=mosquitto
+        - MQTT_PORT=1883
+        - MQTT_USERNAME=mqttuser
+        - MQTT_PASSWORD=mqttpass
+        - DB_URI=mongodb://root:root@mongo:27017
+        - CHECK_AUTH=true
+        - SERVER_USERNAME=admin
+        - SERVER_PASSWORD=admin
+    volumes:
+        - images:/usr/src/app/backend/public-images/ 
+  mongo:
+    image: mongo:latest
+    container_name: ok-bloomer_mongodb
+    restart: unless-stopped
+    environment:
+        - MONGO_INITDB_ROOT_USERNAME=root
+        - MONGO_INITDB_ROOT_PASSWORD=root
+        - MONGO_INITDB_DATABASE=okbloomer
+    ports:
+      - 7001:27017
+  mongo-express:
+    image: mongo-express
+    container_name: ok-bloomer_mongo-express
+    restart: unless-stopped
+    environment:
+        - ME_CONFIG_MONGODB_SERVER=mongo
+        - ME_CONFIG_MONGODB_PORT=27017
+        - ME_CONFIG_MONGODB_ENABLE_ADMIN=true
+        - ME_CONFIG_MONGODB_AUTH_DATABASE=admin
+        - ME_CONFIG_MONGODB_AUTH_USERNAME=root
+        - ME_CONFIG_MONGODB_AUTH_PASSWORD=root
+        - ME_CONFIG_BASICAUTH_USERNAME=admin
+        - ME_CONFIG_BASICAUTH_PASSWORD=admin
+    depends_on:
+        - mongo
+    ports:
+      - 7002:8081
+  mosquitto:
+    image: eclipse-mosquitto
+    restart: unless-stopped
+    volumes:
+      - ./docker/mosquitto/config/:/mosquitto/config/
+      - ./docker/mosquitto/log/:/mosquitto/log/
+      - mosquitto_data:/mosquitto/data/ 
+    restart: unless-stopped
+    ports:
+      - 7003:1883
+      - 7004:9001
+volumes:
+  mosquitto_data:
+  images:

@@ -1,0 +1,11 @@
+<h4>Basic mat-select</h4>
+<mat-form-field appearance="fill">
+  <mat-label>Selected Box</mat-label>
+  <mat-select [(value)]="selected" (selectionChange)="changeSelectedBox()">
+    <mat-option *ngFor="let box of boxes" [value]="box">
+      {{box.getName()}}
+    </mat-option>
+    <a mat-raised-button color="primary" routerLink="/addBox" routerLinkActive="active">Add Box</a>
+    <button mat-raised-button color="accent" (click)="deleteCurrentBox()">Delete Selected Box</button>
+  </mat-select>
+</mat-form-field>

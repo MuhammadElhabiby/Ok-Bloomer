@@ -1,0 +1,35 @@
+&nbsp;
+<br /><br /><br /><br />
+<h2>Picture number: {{currentPicNumber + 1}}</h2>
+<img class="pic" [src]="image" alt="">
+&nbsp;
+<br /><br /><br /><br />
+<button (click)="getPreviousImage()" mat-raised-button color="primary">
+  Previous Picture
+  <mat-icon>arrow_back</mat-icon>
+</button>
+<button (click)="getNextImage()" mat-raised-button color="primary">
+  Next Picture
+  <mat-icon>arrow_forward</mat-icon>
+</button>
+&nbsp;
+
+<mat-card>
+  <form (submit)="addComment(commentForm)" #commentForm="ngForm" class="example-form">
+      <mat-form-field class="example-full-width">
+        <mat-label>Leave a Note</mat-label>
+        <textarea 
+          matInput 
+          placeholder="note"
+          rows="4"
+          name="note"
+          ngModel></textarea>
+      </mat-form-field>
+      
+      <button
+        mat-raised-button
+        color="accent"
+        type="submit">Send Comment
+      </button>
+    </form>
+</mat-card>

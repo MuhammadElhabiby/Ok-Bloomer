@@ -1,0 +1,25 @@
+.plant{
+  width: 100px;
+  height: 100px;
+  justify-content: center;
+}
+
+.buttons {
+  display: flex;
+  justify-content: center;
+  margin: 15px;
+  border: 0px;
+  width: 100%;
+  
+}
+
+.h2 {
+  text-align: center;
+}
+
+span {
+  position: relative;
+  top: 1px;
+  display: inline-block;
+  justify-content: center;
+}

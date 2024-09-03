@@ -1,0 +1,23 @@
+<form class="form">
+    <div>
+        <mat-form-field appearance="fill">
+            <mat-label>Box Name</mat-label>
+            <input matInput type="text" [(ngModel)]="name" [ngModelOptions]="{standalone: true}">
+        </mat-form-field>
+
+        <mat-label>Select Plant</mat-label>
+        <mat-select [(value)]="selectedPlant" placeholder="-">
+            <mat-option *ngFor="let plant of plants" [value]="plant">
+                {{plant}}
+            </mat-option>
+        </mat-select>
+
+        <mat-form-field appearance="fill">
+            <mat-label>ID will be</mat-label>
+            <input matInput disabled="" value="{{smallestAvailableId}}">
+        </mat-form-field>
+
+        <button mat-raised-button color="primary" (click)="addBox()">Add Box</button>
+    </div>
+  </form>
+  

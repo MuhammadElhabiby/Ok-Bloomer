@@ -1,0 +1,24 @@
+<div class="register-container">
+	<div class="register-content">
+		<mat-toolbar class="register-toolbar" color="primary">Sign up</mat-toolbar>
+<mat-card>
+    <mat-spinner *ngIf="isLoading"></mat-spinner>
+    <form (submit)="onSignup(signupForm)" #signupForm="ngForm" *ngIf="!isLoading">
+        <mat-form-field>
+            <mat-icon matPrefix>email</mat-icon>
+            <input matInput name="email" ngModel type="email" placeholder="E-Mail" #emailInput="ngModel" required email>
+            <mat-error *ngIf="emailInput.invalid">Please enter a valid email</mat-error>
+        </mat-form-field>
+        <br>
+        <mat-form-field>
+            <mat-icon matPrefix>lock_outline</mat-icon>
+            <input matInput name="password" ngModel matInput placeholder="Password" #passwordInput="ngModel" required>
+            <mat-error *ngIf="passwordInput.invalid">Please enter a valid password</mat-error>
+        </mat-form-field>
+        <br>
+        <button [disabled]="!signupForm.valid" mat-raised-button color="accent" type="Login">Signup</button>
+
+    </form>
+</mat-card>
+</div>
+</div>

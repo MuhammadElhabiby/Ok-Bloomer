@@ -1,0 +1,26 @@
+<mat-card>
+    <mat-spinner *ngIf="isLoading"></mat-spinner>
+	<div class="login-container">
+		<div class="login-content">
+			<mat-toolbar class="login-toolbar" color="primary">Login</mat-toolbar>
+			<mat-card>
+    <form (submit)="onLogin(loginForm)" #loginForm="ngForm" *ngIf="!isLoading">
+        <mat-form-field>
+            <mat-icon matPrefix>person_outline</mat-icon>
+            <input matInput name="email" ngModel type="email" placeholder="E-Mail" #emailInput="ngModel" required email>
+            <mat-error *ngIf="emailInput.invalid">Please enter a valid email</mat-error>
+        </mat-form-field>
+        <br>
+        <mat-form-field>
+            <mat-icon matPrefix>lock_outline</mat-icon>
+            <input matInput name="password" ngModel matInput placeholder="Password" #passwordInput="ngModel" required>
+            <mat-error *ngIf="passwordInput.invalid">Please enter a valid password</mat-error>
+        </mat-form-field>
+        <br>
+        <button [disabled]="!loginForm.valid" mat-raised-button color="accent" type="Login">Login</button>
+    </form>
+    <span> If You don't have a account yet please <a routerLink ='/signup'>REGISTER HERE</a></span>
+
+</mat-card>
+        </div>
+    </div>

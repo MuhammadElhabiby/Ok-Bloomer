@@ -1,0 +1,130 @@
+<div class="presetAlarm" >
+    <div *ngIf="lastAirTemp > maxAirTemp">
+    <p>
+        <button mat-raised-button color="warn"
+            matBadgePosition="after" 
+            matBadgeColor="warn"
+            >
+            High Air Temp. {{ lastAirTemp | number: '1.0-0'}} °c
+        </button> 
+    </p>
+</div>
+<div *ngIf="lastAirTemp < minAirTemp " >   
+    <p>
+        <button mat-raised-button color="primary" 
+             matBadgePosition="after" 
+            matBadgeColor="primary"
+            >
+        Low Air Temp. {{lastAirTemp}}°c
+        </button>
+    </p>
+</div> 
+<div *ngIf="lastAirTemp > minAirTemp && lastAirTemp < maxAirTemp" >   
+    <p>
+        <button mat-raised-button color="accent" 
+             matBadgePosition="after" 
+            matBadgeColor="accent"
+            >
+        Normal Air Temp. {{lastAirTemp}}°c
+        </button>
+    </p>
+</div> 
+
+
+<div class="presetAlarm" >
+    <div *ngIf="lastWaterTemp > maxWaterTemp">
+    <p>
+        <button mat-raised-button color="warn"
+            matBadgePosition="after" 
+            matBadgeColor="warn"
+            >
+            High Water Temp. {{ lastWaterTemp | number: '1.0-0'}} °c
+        </button> 
+    </p>
+</div>
+<div *ngIf="lastWaterTemp < minWaterTemp " >   
+    <p>
+        <button mat-raised-button color="primary" 
+             matBadgePosition="after" 
+            matBadgeColor="primary"
+            >
+            Low Water Temp. {{lastWaterTemp}}°c
+        </button>
+    </p>
+</div> 
+<div *ngIf="lastWaterTemp > minWaterTemp && lastWaterTemp < maxWaterTemp" >   
+    <p>
+        <button mat-raised-button color="accent" 
+             matBadgePosition="after" 
+            matBadgeColor="accent"
+            >
+            Normal Water Temp. {{lastWaterTemp}}°c
+        </button>
+    </p>
+</div> 
+
+
+<div class="presetAlarm" >
+    <div *ngIf="lastHumidity > maxHumidity">
+    <p>
+        <button mat-raised-button color="warn"
+            matBadgePosition="after" 
+            matBadgeColor="warn"
+            >
+            High Humidity {{ lastHumidity | number: '1.0-0'}}%
+        </button> 
+    </p>
+</div>
+<div *ngIf="lastHumidity < minHumidity " >   
+    <p>
+        <button mat-raised-button color="primary" 
+             matBadgePosition="after" 
+            matBadgeColor="primary"
+            >
+            Low Humidity {{lastHumidity}}%
+        </button>
+    </p>
+</div> 
+<div *ngIf="lastHumidity > minHumidity && lastHumidity < maxHumidity" >   
+    <p>
+        <button mat-raised-button color="accent" 
+             matBadgePosition="after" 
+            matBadgeColor="accent"
+            >
+            Normal Humidity {{lastHumidity}}%
+        </button>
+    </p>
+</div> 
+
+
+<div class="presetAlarm" >
+    <div *ngIf="lastTds > maxTdsWert">
+    <p>
+        <button mat-raised-button color="warn"
+            matBadgePosition="after" 
+            matBadgeColor="warn"
+            >
+            High TDS {{ lastTds | number: '1.0-0'}} PPM
+        </button> 
+    </p>
+</div>
+<div *ngIf="lastTds < minTdsWert " >   
+    <p>
+        <button mat-raised-button color="primary" 
+             matBadgePosition="after" 
+            matBadgeColor="primary"
+            >
+            Low TDS {{lastTds}} PPM
+        </button>
+    </p>
+</div> 
+<div *ngIf="lastTds > minTdsWert && lastTds < maxTdsWert" >   
+    <p>
+        <button mat-raised-button color="accent" 
+             matBadgePosition="after" 
+            matBadgeColor="accent"
+            >
+            Normal TDS {{lastTds}} PPM
+        </button>
+    </p>
+</div> 

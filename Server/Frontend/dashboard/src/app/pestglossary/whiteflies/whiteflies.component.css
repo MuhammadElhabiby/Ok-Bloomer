@@ -1,0 +1,23 @@
+.mat-card-image {
+    width: 300px;
+    height: 300px;
+    border-radius: 6px;
+}
+
+.mat-elevation-z5 {
+    justify-content: center;
+    height: 100%;
+}
+
+.mat-card-actions {
+    text-align: center;
+}
+
+.whiteflies {
+    justify-content: center;
+}
+
+.pest {
+    width: 300px;
+    height: 300px;
+}

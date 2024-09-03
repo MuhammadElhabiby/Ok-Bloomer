@@ -1,0 +1,615 @@
+#include <WiFi.h>//wifi
+#include <PubSubClient.h>//mqtt
+#include <Wire.h>//wire connection and readings
+#include<string.h>
+#include<stdlib.h>
+#include <ctype.h>
+#include <Adafruit_Sensor.h>//bme sensor for air temperatur and humidity
+#include <Adafruit_BME280.h>
+#include <DallasTemperature.h>//water temperatur sensor
+
+// libarys used
+
+#define I2C_SCL 18
+#define I2C_SDA 19
+
+const int oneWireBus = 25;
+OneWire oneWire(oneWireBus);
+
+DallasTemperature sensors(&oneWire);
+
+#define VREF 5             // analog reference voltage(Volt) of the ADC
+#define SCOUNT  30            // sum of sample point
+
+#define Fan_PIN 0 // ESP32 pin GIOP36 (ADC0)
+
+Adafruit_BME280 bme; // I2C
+TwoWire I2CBME = TwoWire(0);
+
+#define AOUT_PIN 39 // ESP32 pin GIOP36 (ADC0) that connects to AOUT pin of moisture sensor
+#define SEALEVELPRESSURE_HPA (1013.25)
+
+#define TdsSensorPin 32
+
+#define LIGHT_SENSOR_PIN 33 // ESP32 pin GIOP36 (ADC0)
+
+int analogBuffer[SCOUNT];     // store the analog value in the array, read from ADC
+int analogBufferTemp[SCOUNT];
+int analogBufferIndex = 0;
+int copyIndex = 0;
+
+float averageVoltage = 0;
+float tds = 0;
+
+// Replace the next variables with your SSID/Password combination
+const char* ssid = "shellyplug-s-4022D882F179";
+const char* password = "okbloomer";
+
+// Add your MQTT Broker IP address, example:
+//const char* mqtt_server = "192.168.1.144";
+const char* mqtt_server = "192.168.33.4";
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+// Needed variables for Timer
+/*
+int currentHour;
+int currentMinute;
+volatile int interruptCounter;
+int totalInterruptCounter;
+hw_timer_t * timer = NULL;
+portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED;
+
+//Interupt COunter
+/*
+  void IRAM_ATTR onTimer() {
+  portENTER_CRITICAL_ISR(&timerMux);
+  interruptCounter++;
+  portEXIT_CRITICAL_ISR(&timerMux);
+  }
+  */
+*/
+
+
+
+int currentTimeHour;
+
+typedef struct stateOfPlant
+{
+  float tempAir;
+  float tempWater;
+  float humidity;
+  bool light;
+  float tds;
+}state;
+
+typedef struct plant
+{
+  char name [20];
+  float minWaterTemp;
+  float maxWaterTemp;
+  float minTemp;
+  float maxTemp;
+  float minHumidity;
+  float maxHumidity;
+  float lightNeededPerDay;
+  float minTds;
+  float maxTds;
+}plantInformation;
+
+plantInformation plantInUse;
+state plantState;
+
+
+void setup() {
+  //wifi and mqtt setup
+  Serial.begin(115200);
+  setup_wifi();
+  I2CBME.begin(I2C_SDA, I2C_SCL, 100000);
+
+  bool status;
+  Serial.println(F("BME280 test"));
+  //Timer setup
+  /*
+    timer = timerBegin(0, 80, true);
+  timerAttachInterrupt(timer, &onTimer, true);
+  timerAlarmWrite(timer, 1000000, true);
+  */
+
+
+  status = bme.begin(0x76 ,&I2CBME);
+  if (!status) {
+    Serial.println("Could not find a valid BME280 sensor, check wiring!");
+    while (1);
+  }
+
+  client.setServer(mqtt_server, 7003);//broker ip adress and port
+  client.setCallback(callback);
+  client.connect("test", "mqttuser", "mqttpass");
+  //pin to control the Fan
+  pinMode(Fan_PIN, OUTPUT);
+  //pin to control the Valve
+
+  //water temperatur Sensor setup
+  sensors.begin();
+
+  //Dummy data instead of Sensor data
+  plantState.tempAir=15;
+  plantState.tempWater=25;
+  plantState.humidity=45;
+  plantState.light=false;
+  plantState.tds=450;
+  //Dummy data instead of information from the back/front end
+  String nameStr="Chilli";
+  strcpy(plantInUse.name, nameStr.c_str());
+  plantInUse.minWaterTemp=18;
+  plantInUse.maxWaterTemp=26;
+  plantInUse.minTemp=15;
+  plantInUse.maxTemp=32;
+  plantInUse.minHumidity=60;
+  plantInUse.maxHumidity=100;
+  plantInUse.lightNeededPerDay=15;
+  plantInUse.minTds=896;
+  plantInUse.maxTds=1526;
+  //Dummy data for the time
+  currentTimeHour=12;
+
+ fanOFF();
+
+}
+
+IPAddress local_IP(192, 168, 33, 5);
+IPAddress gateway(192, 168, 33, 1);
+IPAddress subnet(255, 255, 255, 0);
+
+//wifi setup
+void setup_wifi() {
+  delay(10);
+  WiFi.config(local_IP, gateway, subnet);
+
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+  }
+}
+
+//for the tds values, to take the medium of the last readings
+int getMedianNum(int bArray[], int iFilterLen){
+  int bTab[iFilterLen];
+  for (byte i = 0; i<iFilterLen; i++)
+  bTab[i] = bArray[i];
+  int i, j, bTemp;
+  for (j = 0; j < iFilterLen - 1; j++) {
+    for (i = 0; i < iFilterLen - j - 1; i++) {
+      if (bTab[i] > bTab[i + 1]) {
+        bTemp = bTab[i];
+        bTab[i] = bTab[i + 1];
+        bTab[i + 1] = bTemp;
+      }
+    }
+  }
+  if ((iFilterLen & 1) > 0){
+    bTemp = bTab[(iFilterLen - 1) / 2];
+  }
+  else {
+    bTemp = (bTab[iFilterLen / 2] + bTab[iFilterLen / 2 - 1]) / 2;
+  }
+  return bTemp;
+}
+
+//to connect to the mqtt broker
+void reconnect() {
+  // Loop until we're reconnected
+  while (!client.connected()) {
+    // Attempt to connect
+    if (client.connect("test", "mqttuser", "mqttpass")) {//subscribe to the topics
+      client.subscribe("esp1/plantProfile");
+      client.subscribe("esp1/waterRequest");
+      client.subscribe("esp1/lightRequest");
+      client.subscribe("esp1/plantUpdate");
+      client.subscribe("esp1/lightOut");
+      client.subscribe("esp1/updateTime");
+    } else {
+      Serial.println("Reconnect");
+      delay(5000);
+
+    }
+  }
+}
+//saves/decodes the data we get for the plant profile (mqtt) in the struct
+void setPlantProfile(byte* message,unsigned int length){
+  uint8_t valueNumber=0;
+  String nameStr;
+  String minWaterTempStr;
+  String maxWaterTempStr;
+  String minTempStr;
+  String maxTempStr;
+  String minHumidityStr;
+  String maxHumidityStr;
+  String lightNeededPerDayStr;
+  String maxTdsStr;
+  String minTdsStr;
+  char temp[1];
+  for (int i = 0; i < length; i++) {
+    temp[0]=(char)message[i];
+    if(isspace(temp[0])!=0){
+      valueNumber +=1;
+    }
+    else if(valueNumber==0){
+      nameStr+= (char)message[i];
+    }
+    else if(valueNumber==1){
+      minWaterTempStr += (char)message[i];
+    }
+    else if(valueNumber==2){
+      maxWaterTempStr+= (char)message[i];
+    }
+    else if(valueNumber==3){
+      minTempStr+= (char)message[i];
+    }
+    else if(valueNumber==4){
+      maxTempStr+= (char)message[i];
+    }
+    else if(valueNumber==5){
+      minHumidityStr+= (char)message[i];
+    }
+    else if(valueNumber==6){
+      maxHumidityStr+= (char)message[i];
+    }
+    else if(valueNumber==7){
+      lightNeededPerDayStr+= (char)message[i];
+    }
+    else if(valueNumber==8){
+      minTdsStr+= (char)message[i];
+    }
+    else{
+      maxTdsStr+= (char)message[i];
+    }
+
+  }
+  strcpy(plantInUse.name, nameStr.c_str());
+  plantInUse.minWaterTemp= minWaterTempStr.toFloat();
+  plantInUse.maxWaterTemp= maxWaterTempStr.toFloat();
+  plantInUse.minTemp= minTempStr.toFloat();
+  plantInUse.maxTemp= maxTempStr.toFloat();
+  plantInUse.minHumidity= minHumidityStr.toFloat();
+  plantInUse.maxHumidity= maxHumidityStr.toFloat();
+  plantInUse.lightNeededPerDay= lightNeededPerDayStr.toFloat();
+  plantInUse.minTds= minTdsStr.toFloat();
+  plantInUse.maxTds= maxTdsStr.toFloat();
+}
+//saves/decodes the data we got for the current time
+void setTime(byte* message, unsigned int length){
+  String hour;
+  for (int i = 0; i < length; i++) {
+    hour+=(char)message[i];
+  }
+  currentTimeHour=hour.toInt();
+}
+// sends our sensor values per mqtt to the backend
+void sendmessagePlantState(){
+  char payload[55]="";
+  char air[10];
+  char water[10];
+  char hum[10];
+  char tds[10];
+  char lightF[6]="false";
+  char lightT[5]="true";
+
+  dtostrf(plantState.tempAir,5,2,air);
+  strcat(payload,air);
+
+  strcat(payload," ");
+
+  dtostrf(plantState.tempWater,5,2,water);
+  strcat(payload,water);
+
+  strcat(payload," ");
+
+  dtostrf(plantState.humidity,5,2,hum);
+  strcat(payload,hum);
+
+  strcat(payload," ");
+
+  if(plantState.light){
+    strcat(payload,lightT);
+  }else{
+    strcat(payload,lightF);
+  }
+  strcat(payload," ");
+
+  dtostrf(plantState.tds,5,2,tds);
+  strcat(payload,tds);
+
+
+  int len = strlen(payload);
+  for (int i = 0; i < len; i++){
+    payload[i] = payload[i + 1];
+  }
+  client.publish("esp1/stateOfPlant", payload);
+}
+// turns the mqtt plugs on/of for different things
+void lightON(){
+  client.publish("shellies/shellyplug-s-BCFF4D5B3B26/relay/0/command","on");
+}
+// turns the mqtt plugs on/of for different things
+void lightOFF(){
+  client.publish("shellies/shellyplug-s-BCFF4D5B3B26/relay/0/command","off");
+}
+void pumpeON(){//to dangerous unsupervised
+  //client.publish("shellies/shellyplug-s-4022D882F265/relay/0/command","on");//topic needs to be changed
+}
+void pumpeOFF(){//to dangerous unsupervised
+  //client.publish("shellies/shellyplug-s-4022D882F265/relay/0/command","on");//topic needs to be changed
+}
+// turns the mqtt plugs on/of for different things
+void heaterON(){
+  //client.publish("shellies/shellyplug-s-4022D882F265/relay/0/command","on");//topic needs to be changed
+}
+// turns the mqtt plugs on/of for different things
+void heaterOFF(){
+  //client.publish("shellies/shellyplug-s-4022D882F265/relay/0/command","off");//topic needs to be changed
+}
+// turns the fan on
+void fanON(){
+  digitalWrite(Fan_PIN, HIGH);
+}
+//turns the fan off
+void fanOFF(){
+  digitalWrite(Fan_PIN, LOW);
+}
+//requests the current time from the backend
+void getTime(){
+  client.publish("esp1/requestCurrentTime","time please");
+}
+//method for testing that we get the correct information from the back/front end
+void printPlantInformation(){
+  Serial.print("Name= ");
+  Serial.println(plantInUse.name);
+
+  char payload[10];
+
+  Serial.print("minWaterTemp= ");
+  dtostrf(plantInUse.minWaterTemp,8,2,payload);
+  Serial.println(payload);
+
+  Serial.print("maxWaterTemp= ");
+  dtostrf(plantInUse.maxWaterTemp,8,2,payload);
+  Serial.println(payload);
+
+  Serial.print("minTemp= ");
+  dtostrf(plantInUse.minTemp,8,2,payload);
+  Serial.println(payload);
+
+  Serial.print("maxTemp= ");
+  dtostrf(plantInUse.maxTemp,8,2,payload);
+  Serial.println(payload);
+
+  Serial.print("minHumidity= ");
+  dtostrf(plantInUse.minHumidity,8,2,payload);
+  Serial.println(payload);
+
+  Serial.print("maxHumidity= ");
+  dtostrf(plantInUse.maxHumidity,8,2,payload);
+  Serial.println(payload);
+
+  Serial.print("lightNeededPerDay= ");
+  dtostrf(plantInUse.lightNeededPerDay,8,2,payload);
+  Serial.println(payload);
+
+  Serial.print("minTds= ");
+  dtostrf(plantInUse.minTds,8,2,payload);
+  Serial.println(payload);
+
+  Serial.print("maxTds= ");
+  dtostrf(plantInUse.maxTds,8,2,payload);
+  Serial.println(payload);
+}
+//the function that is called when there is a message in the subscibed topics
+//finds out the topic and reacts to it
+void callback(char* topic, byte* message, unsigned int length) {
+  Serial.print("We got the topic = ");
+  Serial.println(topic);
+  if (String(topic) == "esp1/plantProfile") {
+    setPlantProfile(message,length);
+    printPlantInformation();
+  }
+  else if(String(topic) == "esp1/waterRequest") {
+     //deprecated
+  }
+  else if (String(topic) == "esp1/lightRequest") {
+    //deprecated
+  }
+  else if (String(topic) == "esp1/plantUpdate" ) {
+    getStateOfPlant();
+    sendmessagePlantState();
+  }
+  else if (String(topic) == "esp1/lightOut") {
+    lightOFF();
+  }
+  else if (String(topic) == "esp1/updateTime") {
+    //Get time
+    setTime(message,length);
+  }
+  else {
+    Serial.println("Topic doesn't exist");
+  }
+}
+//calls the sensor functions to gets the current Sensor values
+void getStateOfPlant(){
+  plantState.tempAir=airTemp();
+  plantState.tempWater=waterTemp();;
+  plantState.humidity=humidity();
+  plantState.light=light();
+  tdsValue();
+  }
+// gets the tds value
+void tdsValue(){
+  static unsigned long analogSampleTimepoint = millis();
+  float temperatureC=waterTemp();
+  if(millis()-analogSampleTimepoint > 40U){     //every 40 milliseconds,read the analog value from the ADC
+    analogSampleTimepoint = millis();
+    analogBuffer[analogBufferIndex] = analogRead(TdsSensorPin);    //read the analog value and store into the buffer
+    analogBufferIndex++;
+    if(analogBufferIndex == SCOUNT){
+      analogBufferIndex = 0;
+    }
+  }
+
+  static unsigned long printTimepoint = millis();
+  if(millis()-printTimepoint > 800U){
+    printTimepoint = millis();
+    for(copyIndex=0; copyIndex<SCOUNT; copyIndex++){
+      analogBufferTemp[copyIndex] = analogBuffer[copyIndex];
+
+      // read the analog value more stable by the median filtering algorithm, and convert to voltage value
+      averageVoltage = getMedianNum(analogBufferTemp,SCOUNT) * (float)VREF / 4096.0;
+
+      //temperature compensation formula: fFinalResult(25^C) = fFinalResult(current)/(1.0+0.02*(fTP-25.0));
+      float compensationCoefficient = 1.0+0.02*(temperatureC);
+      //temperature compensation
+      float compensationVoltage=averageVoltage/temperatureC;
+
+      //convert voltage value to tds value
+      tds=(133.42*compensationVoltage*compensationVoltage*compensationVoltage - 255.86*compensationVoltage*compensationVoltage + 857.39*compensationVoltage)*0.5;
+      plantState.tds= tds;
+
+    }
+  }
+}
+//gets the air temperatur from the bme
+float airTemp(){
+  float temp= bme.readTemperature();
+  return temp;
+}
+//gets the humidity from the bme
+float humidity(){
+  return bme.readHumidity();
+}
+//look if there is enough light for us to consider that the lamp is on(even if it is not)
+bool light(){
+  int analogValue = analogRead(LIGHT_SENSOR_PIN);
+  int value = analogRead(AOUT_PIN); // read the analog value from sensor
+  if (analogValue>3600){
+    return true;
+  }
+  return false;
+}
+//gets the water temperatur from the sensors
+float waterTemp(){
+  sensors.requestTemperatures();
+  return sensors.getTempCByIndex(0);
+}
+// get the average of 2 numbers
+float getMedian(float a,float b){
+  return (a+b)/2;
+}
+
+// milli timers
+long lastMsg = 0;
+long timer=0;
+long lighting=0;
+long offSwitch=0;
+//TODO loop zuende
+// time testen, licht stärke testen
+//mqtt steckdosen anapssen für heater,light and pumpe
+// missing valve
+// bme sachen müssen noch gemacht werden
+
+//main loop
+void loop() {
+  //connecting mqtt broker
+  if (!client.connected()) {
+    reconnect();
+  }
+  client.loop();
+
+  long nowMsg = millis();
+  // asks for the current time from the backend every 5 minutes
+  if(nowMsg-timer>300000){
+    timer=nowMsg;
+    getTime();
+  }
+
+  // looks if we can switch the light off
+  if(nowMsg-lighting>600000){
+    lighting=nowMsg;
+    //when its earlier than 7 or it is later than 7+the light per day from the plantInformation
+    //check if light is on and when yes turn it off
+    if(currentTimeHour<7 || 7+(int)plantInUse.lightNeededPerDay<currentTimeHour){
+      if(light()){
+        lightOFF();
+      }
+    }else{
+      // the light shoud be on either through sunlight or the lamp
+      if(light()==false){
+        lightON();
+      }
+    }
+  }
+  // switches heater and fan off
+  if(nowMsg-offSwitch>120000){
+    offSwitch=nowMsg;
+    if(getMedian(plantInUse.minWaterTemp,plantInUse.maxWaterTemp)<=waterTemp()){
+      heaterOFF();
+    }
+    if(getMedian(plantInUse.minTemp,plantInUse.maxTemp)<=airTemp()){
+      fanOFF();
+    }
+    if(getMedian(plantInUse.minHumidity,plantInUse.maxHumidity)<=humidity()){
+      fanOFF();
+    }
+  }
+  // every 15 minutse gets all sensor values and sends them to the backend/frontend
+  if(nowMsg-lastMsg>900000){
+    lastMsg=nowMsg;
+    getStateOfPlant();
+    // water to cold turn heater on
+    if(plantInUse.minWaterTemp>plantState.tempWater){
+      heaterON();
+    }
+    // air to warm turn the fan on
+    /*if(plantInUse.maxTemp>plantState.tempAir){
+      fanON();
+    }
+    // to much humidtity turn create air circulation with fan
+    if(plantInUse.maxHumidity>plantState.humidity){
+      fanON();
+    }*/
+    //Wir können nichts machen wenn die tds werte zu hoch sind
+    sendmessagePlantState();
+  }
+  //Count an interupt every second and add it to interupt counter
+  /* if (interruptCounter > 0) {
+
+    portENTER_CRITICAL(&timerMux);
+    interruptCounter--;
+    portEXIT_CRITICAL(&timerMux);
+
+    totalInterruptCounter++;
+
+    Serial.print("An interrupt as occurred. Total number: ");
+    Serial.println(totalInterruptCounter);}
+
+    onTimer();
+  */
+
+
+}
+//Calculate Seconds of the day to minutes and hours of the day (24) hour cycle
+/*
+void MinutesandHours(int totalInterruptCounter) {
+
+  currentHour = totalInterruptCounter / 3600;
+  currentMinute = (totalInterruptCounter % 3600) /60;
+
+  if (currentHour >= 24) {
+    void timerEnd(timer);
+    totalInterruptCounter = 0;
+    timer = timerBegin(0, 80, true);
+  }
+
+}
+*/
+

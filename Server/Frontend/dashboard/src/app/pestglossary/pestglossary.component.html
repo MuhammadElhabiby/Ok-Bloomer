@@ -1,0 +1,23 @@
+<h2><span>Select the pest you might fount on your plant: </span></h2>
+<div class = buttons>
+  <button mat-button (click)="activatespidermites()">
+    <img class="pest" [src]="image6" alt="">
+  </button>
+  <button mat-button (click)="activatethrips()">
+    <img class="pest" [src]="image7" alt="">
+  </button>
+  <button mat-button (click)="activatewhiteflies()">
+    <img class="pest" [src]="image8" alt="">
+  </button>
+</div>
+
+<div *ngIf="selectedspidermites">
+  <app-spidermites></app-spidermites>
+</div>
+<div *ngIf="selectedthrips">
+  <app-thrips></app-thrips>
+</div>
+<div *ngIf="selectedwhiteflies">
+  <app-whiteflies></app-whiteflies>
+</div>
+

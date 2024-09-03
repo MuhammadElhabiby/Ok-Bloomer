@@ -1,0 +1,7 @@
+ESP32 Setup
+
+VS Code Download : https://code.visualstudio.com/
+
+Plugins Herunterladen : IOPlatform und C/C++ //  Gitlens und Githistory
+
+Github Branch esp32Branch zurzeit Aktuell
